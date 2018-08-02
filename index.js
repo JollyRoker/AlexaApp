@@ -8,8 +8,9 @@ const Alexa = require('ask-sdk');
 //=========================================================================================================================================
 
 const SKILL_NAME = 'Il Signore degli Enigmi';
-const WELCOME_MESSAGE = "Il signore degli enigmi ti da il benvenuto.";
-const RIDDLE_REQUEST = "L'indovinello che devi risolvere è: ";
+const WELCOME_MESSAGE = "Il signore degli enigmi ti da il benvenuto. Metti alla prova le tue capacità con indovinelli e rompicapi e spingi la tua mente agli estremi. Chiedi un nuovo indovinello o riprendi da dove hai lasciato.";
+const WELCOME_REPROMPT = "Chiedi un nuovo indovinello o riprendi da dove hai lasciato.";"
+const RIDDLE_REQUEST = "L'indovinello che devi risolvere è:<break time='0.9s'/>";
 const HELP_MESSAGE = 'Puoi chiedere un indovinello, se non riesci a risolverlo puoi chiedere un indizio al giorno. Che posso fare per te?';
 const HELP_REPROMPT = 'Che posso fare per te?';
 const STOP_MESSAGE = 'Alla prossima!';
@@ -34,27 +35,33 @@ const LaunchRequestHandler = {
         return handlerInput.requestEnvelope.request.type === 'LaunchRequest';
     },
     handle(handlerInput) {
-        const speechText = 'Welcome to the Alexa Skills Kit, you can say hello!';
+        const speechText = WELCOME_MESSAGE;
 
         return handlerInput.responseBuilder
             .speak(speechText)
-            .reprompt(speechText)
-            .withSimpleCard('Hello World', speechText)
+            .reprompt(WELCOME_REPROMPT)
+            .withSimpleCard('Il signore degli enigmi', speechText)
             .getResponse();
     },
 };
 
-const HelloWorldIntentHandler = {
+const NewRiddleIntentHandler = {
     canHandle(handlerInput) {
         return handlerInput.requestEnvelope.request.type === 'IntentRequest'
-            && handlerInput.requestEnvelope.request.intent.name === 'HelloWorldIntent';
+            && handlerInput.requestEnvelope.request.intent.name === 'NewRiddleRequest';
     },
     handle(handlerInput) {
-        const speechText = 'Hello World!';
+        let riddleIndex = Math.floor(Math.random() * data.length);
+        const doneRiddleIndexes = handlerInput.attributesManager.getSessionAttributes().database.doneRiddles
+        while (doneRiddleIndexes.indexOf(riddleIndex) != -1) {
+            riddleIndex = Math.floor(Math.random() * data.length);
+        }
+        const randomRiddle = data[riddleIndex].riddle;
+        const speechText = RIDDLE_REQUEST + randomRiddle;
 
         return handlerInput.responseBuilder
             .speak(speechText)
-            .withSimpleCard('Hello World', speechText)
+            .withSimpleCard('Il signore degli enigmi', speechText)
             .getResponse();
     },
 };
@@ -116,6 +123,46 @@ const ErrorHandler = {
     },
 };
 
+const PersistenceGettingRequestInterceptor = {
+    process(handlerInput) {
+        return new Promise((resolve, reject) => {
+            handlerInput.attributesManager.getPersistentAttributes()
+                .then((attributes) => {
+                    if (Object.keys(attributes).length === 0) {
+                        const d = new Date().getTime();
+                        attributes.database = {
+                            'currentRiddle': '',
+                            'doneRiddles': [],
+                            'unsolvedRiddles': [],
+                            'solvedRiddles': [],
+                            'lastStartedAt': d
+                        }
+                    }
+                    return handlerInput.attributesManager.setSessionAttributes(attributes);
+                })
+                .then(() => {
+                    resolve();
+                })
+                .catch((error) => {
+                    reject(error);
+                })
+        })
+    }
+}
+const PersistenceSavingResponseInterceptor = {
+    process(handlerInput) {
+        return new Promise((resolve, reject) => {
+            handlerInput.attributesManager.savePersistentAttributes()
+                .then(() => {
+                    resolve();
+                })
+                .catch((error) => {
+                    reject(error);
+                })
+        })
+    }
+}
+
 const skillBuilder = Alexa.SkillBuilders.custom();
 
 exports.handler = skillBuilder
@@ -124,7 +171,10 @@ exports.handler = skillBuilder
         HelloWorldIntentHandler,
         HelpIntentHandler,
         CancelAndStopIntentHandler,
-        SessionEndedRequestHandler
+        SessionEndedRequestHandler,
+        NewRiddleIntentHandler
     )
+    .addRequestInterceptors(PersistenceGettingRequestInterceptor)
+    .addResponseInterceptors(PersistenceSavingResponseInterceptor)
     .addErrorHandlers(ErrorHandler)
     .lambda();
