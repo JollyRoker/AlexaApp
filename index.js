@@ -59,8 +59,10 @@ const NewRiddleIntentHandler = {
         const attributes = handlerInput.attributesManager.getSessionAttributes();
         const response = handlerInput.responseBuilder;
 
-        if (!attributes.current) {
+        if (attributes.current === undefined) {
             console.log("This is a new riddle");
+            console.log(attributes.current);
+
             var riddle = getRiddle(handlerInput);
             const speechText = RIDDLE_REQUEST + riddle;
                     
@@ -71,6 +73,7 @@ const NewRiddleIntentHandler = {
                 .getResponse();
         } else {
             console.log("This is an old riddle");
+            console.log(attributes.current);
             const riddle = data[attributes.current].riddle;
             const speechText = RIDDLE_REQUEST + riddle;
 
