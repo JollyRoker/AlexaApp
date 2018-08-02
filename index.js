@@ -9,7 +9,7 @@ const Alexa = require('ask-sdk');
 
 const SKILL_NAME = 'Il Signore degli Enigmi';
 const WELCOME_MESSAGE = "Il signore degli enigmi ti da il benvenuto. Metti alla prova le tue capacità con indovinelli e rompicapi e spingi la tua mente agli estremi. Chiedi un nuovo indovinello o riprendi da dove hai lasciato.";
-const WELCOME_REPROMPT = "Chiedi un nuovo indovinello o riprendi da dove hai lasciato.";"
+const WELCOME_REPROMPT = "Chiedi un nuovo indovinello o riprendi da dove hai lasciato.";
 const RIDDLE_REQUEST = "L'indovinello che devi risolvere è:<break time='0.9s'/>";
 const HELP_MESSAGE = 'Puoi chiedere un indovinello, se non riesci a risolverlo puoi chiedere un indizio al giorno. Che posso fare per te?';
 const HELP_REPROMPT = 'Che posso fare per te?';
@@ -27,6 +27,10 @@ const data = [
     {
         riddle: "La mia vita può durare qualche ora, quello che produco mi divora. Sottile sono veloce, grossa sono lenta e il vento molto mi spaventa. Chi sono?",
         answer: ["candela","la candela"]
+    },
+    {
+        riddle: "Questo è un indovinello di prova",
+        answer: ["candela", "la candela"]
     }
 ]
 
@@ -51,18 +55,31 @@ const NewRiddleIntentHandler = {
             && handlerInput.requestEnvelope.request.intent.name === 'NewRiddleRequest';
     },
     handle(handlerInput) {
-        let riddleIndex = Math.floor(Math.random() * data.length);
-        const doneRiddleIndexes = handlerInput.attributesManager.getSessionAttributes().database.doneRiddles
-        while (doneRiddleIndexes.indexOf(riddleIndex) != -1) {
-            riddleIndex = Math.floor(Math.random() * data.length);
-        }
-        const randomRiddle = data[riddleIndex].riddle;
-        const speechText = RIDDLE_REQUEST + randomRiddle;
+        console.log("Inside NewRiddleRequest");
+        const attributes = handlerInput.attributesManager.getSessionAttributes();
+        const response = handlerInput.responseBuilder;
 
-        return handlerInput.responseBuilder
-            .speak(speechText)
-            .withSimpleCard('Il signore degli enigmi', speechText)
-            .getResponse();
+        if (!attributes.current) {
+            console.log("This is a new riddle");
+            var riddle = getRiddle(handlerInput);
+            const speechText = RIDDLE_REQUEST + riddle;
+                    
+            return response
+                .speak(speechText)
+                .withShouldEndSession(false)
+                .withSimpleCard('Il signore degli enigmi', riddle)
+                .getResponse();
+        } else {
+            console.log("This is an old riddle");
+            const riddle = data[attributes.current].riddle;
+            const speechText = RIDDLE_REQUEST + riddle;
+
+            return response
+                .speak(speechText)
+                .withShouldEndSession(false)
+                .withSimpleCard('Il signore degli enigmi', riddle)
+                .getResponse();
+        }    
     },
 };
 
@@ -123,44 +140,26 @@ const ErrorHandler = {
     },
 };
 
-const PersistenceGettingRequestInterceptor = {
-    process(handlerInput) {
-        return new Promise((resolve, reject) => {
-            handlerInput.attributesManager.getPersistentAttributes()
-                .then((attributes) => {
-                    if (Object.keys(attributes).length === 0) {
-                        const d = new Date().getTime();
-                        attributes.database = {
-                            'currentRiddle': '',
-                            'doneRiddles': [],
-                            'unsolvedRiddles': [],
-                            'solvedRiddles': [],
-                            'lastStartedAt': d
-                        }
-                    }
-                    return handlerInput.attributesManager.setSessionAttributes(attributes);
-                })
-                .then(() => {
-                    resolve();
-                })
-                .catch((error) => {
-                    reject(error);
-                })
-        })
-    }
+function getRandom(min, max) {
+    return Math.floor((Math.random() * ((max - min) + 1)) + min);
 }
-const PersistenceSavingResponseInterceptor = {
-    process(handlerInput) {
-        return new Promise((resolve, reject) => {
-            handlerInput.attributesManager.savePersistentAttributes()
-                .then(() => {
-                    resolve();
-                })
-                .catch((error) => {
-                    reject(error);
-                })
-        })
-    }
+
+function getRiddle(handlerInput) {
+    console.log("I'm in getRiddle()");
+    //GET A RIDDLE
+    const riddleIndex = getRandom(0, data.length - 1);
+    const randomRiddle = data[riddleIndex].riddle;
+
+    //GET SESSION ATTRIBUTES
+    const attributes = handlerInput.attributesManager.getSessionAttributes();
+
+    //SET RIDDLE AS CURRENT
+    attributes.current = riddleIndex;
+
+    //SAVE ATTRIBUTES
+    handlerInput.attributesManager.setSessionAttributes(attributes);
+
+    return randomRiddle;
 }
 
 const skillBuilder = Alexa.SkillBuilders.custom();
@@ -168,13 +167,10 @@ const skillBuilder = Alexa.SkillBuilders.custom();
 exports.handler = skillBuilder
     .addRequestHandlers(
         LaunchRequestHandler,
-        HelloWorldIntentHandler,
+        NewRiddleIntentHandler,
         HelpIntentHandler,
         CancelAndStopIntentHandler,
-        SessionEndedRequestHandler,
-        NewRiddleIntentHandler
+        SessionEndedRequestHandler
     )
-    .addRequestInterceptors(PersistenceGettingRequestInterceptor)
-    .addResponseInterceptors(PersistenceSavingResponseInterceptor)
     .addErrorHandlers(ErrorHandler)
     .lambda();

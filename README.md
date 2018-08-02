@@ -29,5 +29,6 @@ Il database della skill sarà formattato nella seguente maniera
 
 Lo state della skill sarà formattato nella seguente maniera
 {
-    state: _
+    current: num,
+    
 }
