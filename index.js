@@ -66,7 +66,6 @@ const NewRiddleIntentHandler = {
 
         if (attributes.current === undefined) {
             console.log("Looking for a new riddle");
-            console.log(attributes.current);
 
             var riddle = getRiddle(handlerInput);
             const speechText = RIDDLE_REQUEST + riddle;
