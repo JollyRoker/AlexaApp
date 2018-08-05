@@ -216,12 +216,12 @@ const HelpIntentHandler = {
             && handlerInput.requestEnvelope.request.intent.name === 'AMAZON.HelpIntent';
     },
     handle(handlerInput) {
-        const speechText = 'You can say hello to me!';
+        const speechText = HELP_MESSAGE;
 
         return handlerInput.responseBuilder
             .speak(speechText)
-            .reprompt(speechText)
-            .withSimpleCard('Hello World', speechText)
+            .reprompt(HELP_REPROMPT)
+            .withSimpleCard('Il signore degli enigmi', speechText)
             .getResponse();
     },
 };
@@ -237,7 +237,7 @@ const CancelAndStopIntentHandler = {
 
         return handlerInput.responseBuilder
             .speak(speechText)
-            .withSimpleCard('Hello World', speechText)
+            .withSimpleCard('Il signore degli enigmi', speechText)
             .getResponse();
     },
 };
