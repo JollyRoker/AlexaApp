@@ -199,6 +199,7 @@ const HintRequestHandler = {
                     .getResponse();
             }
         } else {
+            console.log("Hint request rejected");
             const speechText = HINT_REJECT;
 
             return handlerInput.responseBuilder
@@ -342,12 +343,14 @@ function isTheRightAnswer(slots, value) {
 }
 
 function firstHint(index) {
+    console.log("I'm in firstHint()");
     const answer = data[index].answer;
     const length = answer.length;
     const speechText = `La soluzione è una parola singola composta da ${length} caratteri`;
     return speechText
 }
 function secondHint(index) {
+    console.log("I'm in secondHint()");
     const answer = data[index].answer;
     const length = answer.length;
     const firstCar = answer.charAt(0);
@@ -355,6 +358,7 @@ function secondHint(index) {
     return speechText
 }
 function thirdHint(index) {
+    console.log("I'm in thirdHint()");
     const answer = data[index].answer;
     const length = answer.length;
     const firstCar = answer.charAt(0);
