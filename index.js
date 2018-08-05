@@ -16,6 +16,7 @@ const ANSWER_REQUEST1 = "L'indovinello a che stai cercando di risolvere è:<brea
 const ANSWER_REQUEST2 = "<break time='0.9s'/>Qual'è la tua risposta?";
 const RIGHT_ANSWER = "La risposta è corretta. Complimenti!";
 const WRONG_ANSWER = "Mi dispiace. La risposta è sbagliata";
+const HINT_REJECT = "Non puoi avere un indizio perchè devono passare almeno 24 ore da quando hai cominciato l'indovinello o da quando hai sentito l'ultimo indizio."
 const HELP_MESSAGE = 'Puoi chiedere un indovinello, se non riesci a risolverlo puoi chiedere un indizio al giorno. Che posso fare per te?';
 const HELP_REPROMPT = 'Che posso fare per te?';
 const STOP_MESSAGE = 'Alla prossima!';
@@ -64,11 +65,14 @@ const NewRiddleIntentHandler = {
         const attributes = handlerInput.attributesManager.getSessionAttributes();
         const response = handlerInput.responseBuilder;
 
-        if (attributes.current === undefined) {
+        if (!attributes.database.currentRiddle) {
             console.log("Looking for a new riddle");
+            console.log(attributes.database.currentRiddle);
 
             var riddle = getRiddle(handlerInput);
             const speechText = RIDDLE_REQUEST + riddle;
+            const d = new Date().getTime();
+            attributes.database.lastStartedAt = d;
                     
             return response
                 .speak(speechText)
@@ -77,7 +81,7 @@ const NewRiddleIntentHandler = {
                 .getResponse();
         } else {
             console.log("Repeating the current riddle");
-            const riddle = data[attributes.current].riddle;
+            const riddle = data[attributes.database.currentRiddle].riddle;
             const speechText = RIDDLE_REQUEST + riddle;
 
             return response
@@ -94,14 +98,14 @@ const AnswerRiddleRequestHandler = {
         console.log("Inside AnswerRiddleRequestHandler");
         const attributes = handlerInput.attributesManager.getSessionAttributes();
 
-        return attributes.current !== undefined
+        return attributes.database.currentRiddle
             && handlerInput.requestEnvelope.request.type === 'IntentRequest'
             && handlerInput.requestEnvelope.request.intent.name === 'AnswerRiddleRequest';
     },
     handle(handlerInput) {
         console.log("Inside AnswerRiddleRequest");
         const attributes = handlerInput.attributesManager.getSessionAttributes();
-        const riddle = data[attributes.current].riddle;
+        const riddle = data[attributes.database.currentRiddle].riddle;
         const speechText = ANSWER_REQUEST1 + riddle + ANSWER_REQUEST2;
 
         return handlerInput.responseBuilder
@@ -116,18 +120,20 @@ const AnswerRiddleIntentHandler = {
     canHandle(handlerInput) {
         console.log("Inside AnswerRiddleIntentHandler");
         const attributes = handlerInput.attributesManager.getSessionAttributes();
-        return attributes.current !== undefined
+        return attributes.database.currentRiddle
             && handlerInput.requestEnvelope.request.type === 'IntentRequest'
             && handlerInput.requestEnvelope.request.intent.name === 'AnswerRiddleIntent';
     },
     handle(handlerInput) {
         console.log("Inside AnswerRiddleIntent");
         const attributes = handlerInput.attributesManager.getSessionAttributes();
-        const answer = data[attributes.current].answer;
+        const answer = data[attributes.database.currentRiddle].answer;
         const isCorrect = isTheRightAnswer(handlerInput.requestEnvelope.request.intent.slots, answer);
 
         if (isCorrect) {
             const speechText = RIGHT_ANSWER;
+            attributes.database.solvedRiddles.push(attributes.database.currentRiddle);
+            attributes.database.doneRiddles.push(attributes.database.currentRiddle);
 
             return handlerInput.responseBuilder
                 .speak(speechText)
@@ -135,6 +141,65 @@ const AnswerRiddleIntentHandler = {
                 .getResponse();
         } else {
             const speechText = WRONG_ANSWER;
+            attributes.database.unsolvedRiddles.push(attributes.database.currentRiddle);
+            attributes.database.doneRiddles.push(attributes.database.currentRiddle);
+
+            return handlerInput.responseBuilder
+                .speak(speechText)
+                .withSimpleCard('Il signore degli enigmi', speechText)
+                .getResponse();
+        }
+    },
+};
+
+const HintRequestHandler = {
+    canHandle(handlerInput) {
+        console.log("Inside HintRequestHandler");
+        const attributes = handlerInput.attributesManager.getSessionAttributes();
+
+        return attributes.database.currentRiddle
+            && handlerInput.requestEnvelope.request.type === 'IntentRequest'
+            && handlerInput.requestEnvelope.request.intent.name === 'HintRequest';
+    },
+    handle(handlerInput) {
+        console.log("Inside HintRequest");
+        const attributes = handlerInput.attributesManager.getSessionAttributes();
+        const currentIndex = attributes.database.currentRiddle;
+        const hintsCounter = attributes.database.hintsCounter;
+        const lastStart = attributes.database.lastStartedAt;
+        const d = new Date().getTime();
+        const timePassed = d - lastStart;
+
+        if (timePassed > 86400000) {
+            if (hintsCounter === 0) {
+                const speechText = firstHint(currentIndex);
+
+                return handlerInput.responseBuilder
+                    .speak(speechText)
+                    .reprompt(INFO_ANSWER)
+                    .withSimpleCard('Il signore degli enigmi', speechText)
+                    .getResponse();
+            } 
+            if (hintsCounter === 1) {
+                const speechText = secondHint(currentIndex);
+
+                return handlerInput.responseBuilder
+                    .speak(speechText)
+                    .reprompt(INFO_ANSWER)
+                    .withSimpleCard('Il signore degli enigmi', speechText)
+                    .getResponse();
+            } 
+            if (hintsCounter === 2) {
+                const speechText = thirdHint(currentIndex);
+
+                return handlerInput.responseBuilder
+                    .speak(speechText)
+                    .reprompt(INFO_ANSWER)
+                    .withSimpleCard('Il signore degli enigmi', speechText)
+                    .getResponse();
+            }
+        } else {
+            const speechText = HINT_REJECT;
 
             return handlerInput.responseBuilder
                 .speak(speechText)
@@ -201,6 +266,47 @@ const ErrorHandler = {
     },
 };
 
+const PersistenceGettingRequestInterceptor = {
+    process(handlerInput) {
+        return new Promise((resolve, reject) => {
+            handlerInput.attributesManager.getPersistentAttributes()
+                .then((attributes) => {
+                    if (Object.keys(attributes).length === 0) {
+                        const d = new Date().getTime();
+                        attributes.database = {
+                            'currentRiddle': '',
+                            'doneRiddles': [],
+                            'unsolvedRiddles': [],
+                            'solvedRiddles': [],
+                            'lastStartedAt': d,
+                            'hintsCounter':0
+                        }
+                    }
+                    return handlerInput.attributesManager.setSessionAttributes(attributes);
+                })
+                .then(() => {
+                    resolve();
+                })
+                .catch((error) => {
+                    reject(error);
+                })
+        })
+    }
+}
+const PersistenceSavingResponseInterceptor = {
+    process(handlerInput) {
+        return new Promise((resolve, reject) => {
+            handlerInput.attributesManager.savePersistentAttributes()
+                .then(() => {
+                    resolve();
+                })
+                .catch((error) => {
+                    reject(error);
+                })
+        })
+    }
+}
+
 function getRandom(min, max) {
     return Math.floor((Math.random() * ((max - min) + 1)) + min);
 }
@@ -215,7 +321,7 @@ function getRiddle(handlerInput) {
     const attributes = handlerInput.attributesManager.getSessionAttributes();
 
     //SET RIDDLE AS CURRENT
-    attributes.current = riddleIndex;
+    attributes.database.currentRiddle = riddleIndex;
 
     //SAVE ATTRIBUTES
     handlerInput.attributesManager.setSessionAttributes(attributes);
@@ -235,7 +341,29 @@ function isTheRightAnswer(slots, value) {
     return false;
 }
 
-const skillBuilder = Alexa.SkillBuilders.custom();
+function firstHint(index) {
+    const answer = data[index].answer;
+    const length = answer.length;
+    const speechText = `La soluzione è una parola singola composta da ${length} caratteri`;
+    return speechText
+}
+function secondHint(index) {
+    const answer = data[index].answer;
+    const length = answer.length;
+    const firstCar = answer.charAt(0);
+    const speechText = `La soluzione è una parola singola composta da ${length} caratteri. La prima lettere è la ${firstCar}`;
+    return speechText
+}
+function thirdHint(index) {
+    const answer = data[index].answer;
+    const length = answer.length;
+    const firstCar = answer.charAt(0);
+    const secCar = answer.charAt(1);
+    const speechText = `La soluzione è una parola singola composta da ${length} caratteri. La prima lettere è la ${firstCar}. La seconda lettera è la ${secCar}`;
+    return speechText
+}
+
+const skillBuilder = Alexa.SkillBuilders.standard();
 
 exports.handler = skillBuilder
     .addRequestHandlers(
@@ -245,7 +373,12 @@ exports.handler = skillBuilder
         CancelAndStopIntentHandler,
         SessionEndedRequestHandler,
         AnswerRiddleRequestHandler,
-        AnswerRiddleIntentHandler
+        AnswerRiddleIntentHandler,
+        HintRequestHandler
     )
+    .addRequestInterceptors(PersistenceGettingRequestInterceptor)
+    .addResponseInterceptors(PersistenceSavingResponseInterceptor)
     .addErrorHandlers(ErrorHandler)
+    .withAutoCreateTable(true)
+    .withTableName('Database1Enigmi')
     .lambda();
