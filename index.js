@@ -172,7 +172,7 @@ const HintRequestHandler = {
 
         if (timePassed > 86400000) {
             if (hintsCounter === 0) {
-                const speechText = firstHint(currentIndex);
+                const speechText = firstHint(handlerInput, currentIndex);
 
                 return handlerInput.responseBuilder
                     .speak(speechText)
@@ -181,7 +181,7 @@ const HintRequestHandler = {
                     .getResponse();
             } 
             if (hintsCounter === 1) {
-                const speechText = secondHint(currentIndex);
+                const speechText = secondHint(handlerInput, currentIndex);
 
                 return handlerInput.responseBuilder
                     .speak(speechText)
@@ -190,7 +190,7 @@ const HintRequestHandler = {
                     .getResponse();
             } 
             if (hintsCounter === 2) {
-                const speechText = thirdHint(currentIndex);
+                const speechText = thirdHint(handlerInput, currentIndex);
 
                 return handlerInput.responseBuilder
                     .speak(speechText)
@@ -342,27 +342,57 @@ function isTheRightAnswer(slots, value) {
     return false;
 }
 
-function firstHint(index) {
+function firstHint(handlerInput, index) {
     console.log("I'm in firstHint()");
     const answer = data[index].answer;
     const length = answer.length;
+
+    //GET SESSION ATTRIBUTES
+    const attributes = handlerInput.attributesManager.getSessionAttributes();
+
+    //SET RIDDLE AS CURRENT
+    attributes.database.hintsCounter += 1;
+
+    //SAVE ATTRIBUTES
+    handlerInput.attributesManager.setSessionAttributes(attributes);
+
     const speechText = `La soluzione è una parola singola composta da ${length} caratteri`;
     return speechText
 }
-function secondHint(index) {
+function secondHint(handlerInput, index) {
     console.log("I'm in secondHint()");
     const answer = data[index].answer;
     const length = answer.length;
     const firstCar = answer.charAt(0);
+
+    //GET SESSION ATTRIBUTES
+    const attributes = handlerInput.attributesManager.getSessionAttributes();
+
+    //SET RIDDLE AS CURRENT
+    attributes.database.hintsCounter += 1;
+
+    //SAVE ATTRIBUTES
+    handlerInput.attributesManager.setSessionAttributes(attributes);
+
     const speechText = `La soluzione è una parola singola composta da ${length} caratteri. La prima lettere è la ${firstCar}`;
     return speechText
 }
-function thirdHint(index) {
+function thirdHint(handlerInput, index) {
     console.log("I'm in thirdHint()");
     const answer = data[index].answer;
     const length = answer.length;
     const firstCar = answer.charAt(0);
     const secCar = answer.charAt(1);
+
+    //GET SESSION ATTRIBUTES
+    const attributes = handlerInput.attributesManager.getSessionAttributes();
+
+    //SET RIDDLE AS CURRENT
+    attributes.database.hintsCounter += 1;
+
+    //SAVE ATTRIBUTES
+    handlerInput.attributesManager.setSessionAttributes(attributes);
+
     const speechText = `La soluzione è una parola singola composta da ${length} caratteri. La prima lettere è la ${firstCar}. La seconda lettera è la ${secCar}`;
     return speechText
 }
