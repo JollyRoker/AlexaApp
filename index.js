@@ -14,13 +14,14 @@ const RIDDLE_REQUEST = "L'indovinello che devi risolvere è:<break time='0.9s'/>
 const INFO_ANSWER = "Puoi rispondere direttamente ora all'indovinello, o chiedere al signore degli enigmi di rispondere se ti verrà in mente più tardi.";
 const ANSWER_REQUEST1 = "L'indovinello a che stai cercando di risolvere è:<break time='0.9s'/> ";
 const ANSWER_REQUEST2 = "<break time='0.9s'/>Qual'è la tua risposta?";
-const RIGHT_ANSWER = "La risposta è corretta. Complimenti!";
+const RIGHT_ANSWER = "La risposta è corretta. Complimenti! Ma la sfida non è finita. Chiedi un nuovo indovinello per continuare a ragionare.";
 const WRONG_ANSWER = "Mi dispiace. La risposta è sbagliata";
 const HINT_REJECT = "Non puoi avere un indizio perchè devono passare almeno 24 ore da quando hai cominciato l'indovinello o da quando hai sentito l'ultimo indizio."
 const HINT_OLD = "Per il prossimo indizio, devi aspettare almeno 24 ore."
+const GET_ANSWER = "La soluzione all'indovinello corrente è: "
 const HELP_MESSAGE = 'Puoi chiedere un indovinello, se non riesci a risolverlo puoi chiedere un indizio al giorno. Che posso fare per te?';
 const HELP_REPROMPT = 'Che posso fare per te?';
-const STOP_MESSAGE = 'Torna ad allenarti quando vuoi.Se questa skill ti piace, lascia una recensione positiva.Grazie!';
+const STOP_MESSAGE = 'Torna ad allenarti quando vuoi. Se questa skill ti piace, lascia una recensione positiva.Grazie!';
 const FALLBACK_MESSAGE = 'Questa skill non può soddisfare la tua richiesta. Può ispirarti grazie a delle citazioni quando la apri. Cosa posso fare per te?';
 const FALLBACK_REPROMPT = 'Che cosa posso fare per te?';
 
@@ -35,7 +36,11 @@ const data = [
     },
     {
         riddle: "Questo è un indovinello di prova",
-        answer: "test"
+        answer: "indovinello"
+    },
+    {
+        riddle: "Questo è un rompicapo di prova",
+        answer: "rompicapo"
     }
 ]
 
@@ -93,65 +98,6 @@ const NewRiddleIntentHandler = {
     },
 };
 
-const AnswerRiddleRequestHandler = {
-    canHandle(handlerInput) {
-        console.log("Inside AnswerRiddleRequestHandler");
-        const attributes = handlerInput.attributesManager.getSessionAttributes();
-
-        return attributes.database.currentRiddle
-            && handlerInput.requestEnvelope.request.type === 'IntentRequest'
-            && handlerInput.requestEnvelope.request.intent.name === 'AnswerRiddleRequest';
-    },
-    handle(handlerInput) {
-        console.log("Inside AnswerRiddleRequest");
-        const attributes = handlerInput.attributesManager.getSessionAttributes();
-        const riddle = data[attributes.database.currentRiddle].riddle;
-        const speechText = ANSWER_REQUEST1 + riddle + ANSWER_REQUEST2;
-
-        return handlerInput.responseBuilder
-            .speak(speechText)
-            .reprompt(ANSWER_REQUEST2)
-            .withSimpleCard(SKILL_NAME, speechText)
-            .getResponse();
-    },
-};
-
-const AnswerRiddleIntentHandler = {
-    canHandle(handlerInput) {
-        console.log("Inside AnswerRiddleIntentHandler");
-        const attributes = handlerInput.attributesManager.getSessionAttributes();
-        return attributes.database.currentRiddle
-            && handlerInput.requestEnvelope.request.type === 'IntentRequest'
-            && handlerInput.requestEnvelope.request.intent.name === 'AnswerRiddleIntent';
-    },
-    handle(handlerInput) {
-        console.log("Inside AnswerRiddleIntent");
-        const attributes = handlerInput.attributesManager.getSessionAttributes();
-        const answer = data[attributes.database.currentRiddle].answer;
-        const isCorrect = isTheRightAnswer(handlerInput.requestEnvelope.request.intent.slots, answer);
-
-        if (isCorrect) {
-            const speechText = RIGHT_ANSWER;
-            attributes.database.solvedRiddles.push(attributes.database.currentRiddle);
-            attributes.database.doneRiddles.push(attributes.database.currentRiddle);
-
-            return handlerInput.responseBuilder
-                .speak(speechText)
-                .withSimpleCard(SKILL_NAME, speechText)
-                .getResponse();
-        } else {
-            const speechText = WRONG_ANSWER;
-            attributes.database.unsolvedRiddles.push(attributes.database.currentRiddle);
-            attributes.database.doneRiddles.push(attributes.database.currentRiddle);
-
-            return handlerInput.responseBuilder
-                .speak(speechText)
-                .withSimpleCard(SKILL_NAME, speechText)
-                .getResponse();
-        }
-    },
-};
-
 const HintRequestHandler = {
     canHandle(handlerInput) {
         console.log("Inside HintRequestHandler");
@@ -197,6 +143,90 @@ const HintRequestHandler = {
                     .getResponse();
             }
         }
+    },
+};
+
+const AnswerRiddleRequestHandler = {
+    canHandle(handlerInput) {
+        console.log("Inside AnswerRiddleRequestHandler");
+        const attributes = handlerInput.attributesManager.getSessionAttributes();
+
+        return attributes.database.currentRiddle
+            && handlerInput.requestEnvelope.request.type === 'IntentRequest'
+            && handlerInput.requestEnvelope.request.intent.name === 'AnswerRiddleRequest';
+    },
+    handle(handlerInput) {
+        console.log("Inside AnswerRiddleRequest");
+        const attributes = handlerInput.attributesManager.getSessionAttributes();
+        const riddle = data[attributes.database.currentRiddle].riddle;
+        const speechText = ANSWER_REQUEST1 + riddle + ANSWER_REQUEST2;
+
+        return handlerInput.responseBuilder
+            .speak(speechText)
+            .reprompt(ANSWER_REQUEST2)
+            .withSimpleCard(SKILL_NAME, speechText)
+            .getResponse();
+    },
+};
+
+const AnswerRiddleIntentHandler = {
+    canHandle(handlerInput) {
+        console.log("Inside AnswerRiddleIntentHandler");
+        const attributes = handlerInput.attributesManager.getSessionAttributes();
+
+        return attributes.database.currentRiddle
+            && handlerInput.requestEnvelope.request.type === 'IntentRequest'
+            && handlerInput.requestEnvelope.request.intent.name === 'AnswerRiddleIntent';
+    },
+    handle(handlerInput) {
+        console.log("Inside AnswerRiddleIntent");
+        const attributes = handlerInput.attributesManager.getSessionAttributes();
+        const answer = data[attributes.database.currentRiddle].answer;
+        const isCorrect = isTheRightAnswer(handlerInput.requestEnvelope.request.intent.slots, answer);
+
+        if (isCorrect) {
+            const speechText = RIGHT_ANSWER;
+            attributes.database.solvedRiddles.push(attributes.database.currentRiddle);
+            attributes.database.doneRiddles.push(attributes.database.currentRiddle);
+
+            return handlerInput.responseBuilder
+                .speak(speechText)
+                .withSimpleCard(SKILL_NAME, speechText)
+                .getResponse();
+        } else {
+            const speechText = WRONG_ANSWER;
+
+            return handlerInput.responseBuilder
+                .speak(speechText)
+                .withSimpleCard(SKILL_NAME, speechText)
+                .getResponse();
+        }
+    },
+};
+
+const GetAnswerIntentHandler = {
+    canHandle(handlerInput) {
+        console.log("Inside GetAnswerIntentHandler");
+        const attributes = handlerInput.attributesManager.getSessionAttributes();
+
+        return attributes.database.currentRiddle
+            && handlerInput.requestEnvelope.request.type === 'IntentRequest'
+            && handlerInput.requestEnvelope.request.intent.name === 'GetAnswerIntent';
+    },
+    handle(handlerInput) {
+        console.log("Inside GetAnswerIntent");
+        const attributes = handlerInput.attributesManager.getSessionAttributes();
+        const answer = data[attributes.database.currentRiddle].answer;
+        attributes.database.unsolvedRiddles.push(attributes.database.currentRiddle);
+        attributes.database.doneRiddles.push(attributes.database.currentRiddle);
+
+        const speechText = GET_ANSWER + answer + ". Stai sbattendo la testa contro il muro ora? Chiedi un nuovo indovinello e non pensarci più.";
+
+        return handlerInput.responseBuilder
+            .speak(speechText)
+            .reprompt("Ora puoi chiedere un nuovo indovinello al signore degli enigmi.")
+            .withSimpleCard(SKILL_NAME, speechText)
+            .getResponse();
     },
 };
 
@@ -346,17 +376,20 @@ function getHint(handlerInput, index) {
     const secCar = answer.charAt(1);
     const numberOfHints = attributes.database.hintsCounter;
     const d = new Date().getTime();
-    var speechText;
+    let speechText;
 
     switch (numberOfHints) {
         case 0:
             speechText = `La soluzione è una parola singola composta da ${length} caratteri.`;
             break;
         case 1:
-            speechText = `La soluzione è una parola singola composta da ${length} caratteri. La prima lettere è la ${firstCar}.`;
+            speechText = `La soluzione è una parola singola composta da ${length} caratteri. La prima lettera è la ${firstCar}.`;
             break;
         case 2:
-            speechText = `La soluzione è una parola singola composta da ${length} caratteri. La prima lettere è la ${firstCar}. La seconda lettera è la ${secCar}.`;
+            speechText = `La soluzione è una parola singola composta da ${length} caratteri. La prima lettera è la ${firstCar}. La seconda lettera è la ${secCar}.`;
+            break;
+        default:
+            speechText = `La soluzione è una parola singola composta da ${length} caratteri. La prima lettera è la ${firstCar}. La seconda lettera è la ${secCar}. Hai raggiunto il numero massimo di indizi. Se non riesci comunque a trovare la soluzione, chiedi al signore degli enigmi di svelarti la soluzione segreta.`;
     }
 
     //UPDATE SESSION ATTRIBUTES
@@ -381,7 +414,8 @@ exports.handler = skillBuilder
         SessionEndedRequestHandler,
         AnswerRiddleRequestHandler,
         AnswerRiddleIntentHandler,
-        HintRequestHandler
+        HintRequestHandler,
+        GetAnswerIntentHandler
     )
     .addRequestInterceptors(PersistenceGettingRequestInterceptor)
     .addResponseInterceptors(PersistenceSavingResponseInterceptor)
