@@ -431,5 +431,5 @@ exports.handler = skillBuilder
     .addResponseInterceptors(PersistenceSavingResponseInterceptor)
     .addErrorHandlers(ErrorHandler)
     .withAutoCreateTable(true)
-    .withTableName('Database1Enigmi')
+    .withTableName('Database3Enigmi')
     .lambda();
