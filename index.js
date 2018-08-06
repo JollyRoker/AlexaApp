@@ -186,8 +186,13 @@ const AnswerRiddleIntentHandler = {
 
         if (isCorrect) {
             const speechText = RIGHT_ANSWER;
+
+            //UPDATE DATABASE
             attributes.database.solvedRiddles.push(attributes.database.currentRiddle);
             attributes.database.doneRiddles.push(attributes.database.currentRiddle);
+            attributes.database.currentHint = '';
+            attributes.database.hintsCounter = 0;
+            attributes.database.currentRiddle = '';
 
             return handlerInput.responseBuilder
                 .speak(speechText)
@@ -217,8 +222,13 @@ const GetAnswerIntentHandler = {
         console.log("Inside GetAnswerIntent");
         const attributes = handlerInput.attributesManager.getSessionAttributes();
         const answer = data[attributes.database.currentRiddle].answer;
+
+        //UPDATE DATABASE
         attributes.database.unsolvedRiddles.push(attributes.database.currentRiddle);
         attributes.database.doneRiddles.push(attributes.database.currentRiddle);
+        attributes.database.currentHint = '';
+        attributes.database.hintsCounter = 0;
+        attributes.database.currentRiddle = '';
 
         const speechText = GET_ANSWER + answer + ". Stai sbattendo la testa contro il muro ora? Chiedi un nuovo indovinello e non pensarci più.";
 
