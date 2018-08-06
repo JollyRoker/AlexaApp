@@ -165,39 +165,18 @@ const HintRequestHandler = {
         console.log("Inside HintRequest");
         const attributes = handlerInput.attributesManager.getSessionAttributes();
         const currentIndex = attributes.database.currentRiddle;
-        const hintsCounter = attributes.database.hintsCounter;
         const lastStart = attributes.database.lastStartedAt;
         const d = new Date().getTime();
         const timePassed = d - lastStart;
 
         if (timePassed > 86400000) {
-            if (hintsCounter === 0) {
-                const speechText = firstHint(handlerInput, currentIndex);
+            const speechText = getHint(handlerInput, currentIndex);
 
-                return handlerInput.responseBuilder
-                    .speak(speechText)
-                    .reprompt(INFO_ANSWER)
-                    .withSimpleCard('Il signore degli enigmi', speechText)
-                    .getResponse();
-            } 
-            if (hintsCounter === 1) {
-                const speechText = secondHint(handlerInput, currentIndex);
-
-                return handlerInput.responseBuilder
-                    .speak(speechText)
-                    .reprompt(INFO_ANSWER)
-                    .withSimpleCard('Il signore degli enigmi', speechText)
-                    .getResponse();
-            } 
-            if (hintsCounter === 2) {
-                const speechText = thirdHint(handlerInput, currentIndex);
-
-                return handlerInput.responseBuilder
-                    .speak(speechText)
-                    .reprompt(INFO_ANSWER)
-                    .withSimpleCard('Il signore degli enigmi', speechText)
-                    .getResponse();
-            }
+            return handlerInput.responseBuilder
+                .speak(speechText)
+                .reprompt(INFO_ANSWER)
+                .withSimpleCard('Il signore degli enigmi', speechText)
+                .getResponse();
         } else {
             console.log("Hint request rejected");
             const speechText = HINT_REJECT;
@@ -342,58 +321,36 @@ function isTheRightAnswer(slots, value) {
     return false;
 }
 
-function firstHint(handlerInput, index) {
-    console.log("I'm in firstHint()");
-    const answer = data[index].answer;
-    const length = answer.length;
+function getHint(handlerInput, index) {
+    console.log("I'm in getHint()");
 
     //GET SESSION ATTRIBUTES
     const attributes = handlerInput.attributesManager.getSessionAttributes();
 
-    //SET RIDDLE AS CURRENT
-    attributes.database.hintsCounter += 1;
-
-    //SAVE ATTRIBUTES
-    handlerInput.attributesManager.setSessionAttributes(attributes);
-
-    const speechText = `La soluzione è una parola singola composta da ${length} caratteri`;
-    return speechText
-}
-function secondHint(handlerInput, index) {
-    console.log("I'm in secondHint()");
-    const answer = data[index].answer;
-    const length = answer.length;
-    const firstCar = answer.charAt(0);
-
-    //GET SESSION ATTRIBUTES
-    const attributes = handlerInput.attributesManager.getSessionAttributes();
-
-    //SET RIDDLE AS CURRENT
-    attributes.database.hintsCounter += 1;
-
-    //SAVE ATTRIBUTES
-    handlerInput.attributesManager.setSessionAttributes(attributes);
-
-    const speechText = `La soluzione è una parola singola composta da ${length} caratteri. La prima lettere è la ${firstCar}`;
-    return speechText
-}
-function thirdHint(handlerInput, index) {
-    console.log("I'm in thirdHint()");
+    //LOGIC
     const answer = data[index].answer;
     const length = answer.length;
     const firstCar = answer.charAt(0);
     const secCar = answer.charAt(1);
+    const numberOfHints = attributes.database.hintsCounter;
+    var speechText;
 
-    //GET SESSION ATTRIBUTES
-    const attributes = handlerInput.attributesManager.getSessionAttributes();
-
-    //SET RIDDLE AS CURRENT
-    attributes.database.hintsCounter += 1;
-
-    //SAVE ATTRIBUTES
-    handlerInput.attributesManager.setSessionAttributes(attributes);
-
-    const speechText = `La soluzione è una parola singola composta da ${length} caratteri. La prima lettere è la ${firstCar}. La seconda lettera è la ${secCar}`;
+    switch (numberOfHints) {
+        case 0:
+            attributes.database.hintsCounter += 1;
+            handlerInput.attributesManager.setSessionAttributes(attributes);
+            speechText = `La soluzione è una parola singola composta da ${length} caratteri`;
+            break;
+        case 1:
+            attributes.database.hintsCounter += 1;
+            handlerInput.attributesManager.setSessionAttributes(attributes);
+            speechText = `La soluzione è una parola singola composta da ${length} caratteri. La prima lettere è la ${firstCar}`;
+            break;
+        case 2:
+            attributes.database.hintsCounter += 1;
+            handlerInput.attributesManager.setSessionAttributes(attributes);
+            speechText = `La soluzione è una parola singola composta da ${length} caratteri. La prima lettere è la ${firstCar}. La seconda lettera è la ${secCar}`;
+    }
     return speechText
 }
 
