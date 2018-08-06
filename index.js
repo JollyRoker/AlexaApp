@@ -17,10 +17,10 @@ const ANSWER_REQUEST2 = "<break time='0.9s'/>Qual'è la tua risposta?";
 const RIGHT_ANSWER = "La risposta è corretta. Complimenti!";
 const WRONG_ANSWER = "Mi dispiace. La risposta è sbagliata";
 const HINT_REJECT = "Non puoi avere un indizio perchè devono passare almeno 24 ore da quando hai cominciato l'indovinello o da quando hai sentito l'ultimo indizio."
+const HINT_OLD = "Per il prossimo indizio, devi aspettare almeno 24 ore."
 const HELP_MESSAGE = 'Puoi chiedere un indovinello, se non riesci a risolverlo puoi chiedere un indizio al giorno. Che posso fare per te?';
 const HELP_REPROMPT = 'Che posso fare per te?';
-const STOP_MESSAGE = 'Alla prossima!';
-const ADDITIONAL_INFO = 'L\'autore della citazione è: ';
+const STOP_MESSAGE = 'Torna ad allenarti quando vuoi.Se questa skill ti piace, lascia una recensione positiva.Grazie!;
 const FALLBACK_MESSAGE = 'Questa skill non può soddisfare la tua richiesta. Può ispirarti grazie a delle citazioni quando la apri. Cosa posso fare per te?';
 const FALLBACK_REPROMPT = 'Che cosa posso fare per te?';
 
@@ -49,7 +49,7 @@ const LaunchRequestHandler = {
         return handlerInput.responseBuilder
             .speak(speechText)
             .reprompt(WELCOME_REPROMPT)
-            .withSimpleCard('Il signore degli enigmi', speechText)
+            .withSimpleCard(SKILL_NAME, speechText)
             .getResponse();
     },
 };
@@ -77,7 +77,7 @@ const NewRiddleIntentHandler = {
             return response
                 .speak(speechText)
                 .reprompt(INFO_ANSWER)
-                .withSimpleCard('Il signore degli enigmi', riddle)
+                .withSimpleCard(SKILL_NAME, riddle)
                 .getResponse();
         } else {
             console.log("Repeating the current riddle");
@@ -87,7 +87,7 @@ const NewRiddleIntentHandler = {
             return response
                 .speak(speechText)
                 .reprompt(INFO_ANSWER)
-                .withSimpleCard('Il signore degli enigmi', riddle)
+                .withSimpleCard(SKILL_NAME, riddle)
                 .getResponse();
         }    
     },
@@ -111,7 +111,7 @@ const AnswerRiddleRequestHandler = {
         return handlerInput.responseBuilder
             .speak(speechText)
             .reprompt(ANSWER_REQUEST2)
-            .withSimpleCard('Il signore degli enigmi', speechText)
+            .withSimpleCard(SKILL_NAME, speechText)
             .getResponse();
     },
 };
@@ -137,7 +137,7 @@ const AnswerRiddleIntentHandler = {
 
             return handlerInput.responseBuilder
                 .speak(speechText)
-                .withSimpleCard('Il signore degli enigmi', speechText)
+                .withSimpleCard(SKILL_NAME, speechText)
                 .getResponse();
         } else {
             const speechText = WRONG_ANSWER;
@@ -146,7 +146,7 @@ const AnswerRiddleIntentHandler = {
 
             return handlerInput.responseBuilder
                 .speak(speechText)
-                .withSimpleCard('Il signore degli enigmi', speechText)
+                .withSimpleCard(SKILL_NAME, speechText)
                 .getResponse();
         }
     },
@@ -168,6 +168,7 @@ const HintRequestHandler = {
         const lastStart = attributes.database.lastStartedAt;
         const d = new Date().getTime();
         const timePassed = d - lastStart;
+        const currentHint = attributes.database.currentHint
 
         if (timePassed > 86400000) {
             const speechText = getHint(handlerInput, currentIndex);
@@ -175,16 +176,26 @@ const HintRequestHandler = {
             return handlerInput.responseBuilder
                 .speak(speechText)
                 .reprompt(INFO_ANSWER)
-                .withSimpleCard('Il signore degli enigmi', speechText)
+                .withSimpleCard(SKILL_NAME, speechText)
                 .getResponse();
         } else {
-            console.log("Hint request rejected");
-            const speechText = HINT_REJECT;
+            if (!currentHint) {
+                console.log("Hint request rejected");
+                const speechText = HINT_REJECT;
 
-            return handlerInput.responseBuilder
-                .speak(speechText)
-                .withSimpleCard('Il signore degli enigmi', speechText)
-                .getResponse();
+                return handlerInput.responseBuilder
+                    .speak(speechText)
+                    .withSimpleCard(SKILL_NAME, speechText)
+                    .getResponse();
+            } else {
+                console.log("Repeating the old hint");
+                const speechText = currentHint + HINT_OLD;
+
+                return handlerInput.responseBuilder
+                    .speak(speechText)
+                    .withSimpleCard(SKILL_NAME, speechText)
+                    .getResponse();
+            }
         }
     },
 };
@@ -200,7 +211,7 @@ const HelpIntentHandler = {
         return handlerInput.responseBuilder
             .speak(speechText)
             .reprompt(HELP_REPROMPT)
-            .withSimpleCard('Il signore degli enigmi', speechText)
+            .withSimpleCard(SKILL_NAME, speechText)
             .getResponse();
     },
 };
@@ -212,11 +223,11 @@ const CancelAndStopIntentHandler = {
                 || handlerInput.requestEnvelope.request.intent.name === 'AMAZON.StopIntent');
     },
     handle(handlerInput) {
-        const speechText = 'Goodbye!';
+        const speechText = STOP_MESSAGE;
 
         return handlerInput.responseBuilder
             .speak(speechText)
-            .withSimpleCard('Il signore degli enigmi', speechText)
+            .withSimpleCard(SKILL_NAME, speechText)
             .getResponse();
     },
 };
@@ -240,8 +251,8 @@ const ErrorHandler = {
         console.log(`Error handled: ${error.message}`);
 
         return handlerInput.responseBuilder
-            .speak('Sorry, I can\'t understand the command. Please say again.')
-            .reprompt('Sorry, I can\'t understand the command. Please say again.')
+            .speak('Scusa, non ho capito il tuo comando. Prova a ripetere di nuovo.')
+            .reprompt('Scusa, non ho capito il tuo comando. Prova a ripetere di nuovo.')
             .getResponse();
     },
 };
@@ -259,7 +270,8 @@ const PersistenceGettingRequestInterceptor = {
                             'unsolvedRiddles': [],
                             'solvedRiddles': [],
                             'lastStartedAt': d,
-                            'hintsCounter':0
+                            'hintsCounter':0,
+                            'currentHint':''
                         }
                     }
                     return handlerInput.attributesManager.setSessionAttributes(attributes);
@@ -333,24 +345,28 @@ function getHint(handlerInput, index) {
     const firstCar = answer.charAt(0);
     const secCar = answer.charAt(1);
     const numberOfHints = attributes.database.hintsCounter;
+    const d = new Date().getTime();
     var speechText;
 
     switch (numberOfHints) {
         case 0:
-            attributes.database.hintsCounter += 1;
-            handlerInput.attributesManager.setSessionAttributes(attributes);
-            speechText = `La soluzione è una parola singola composta da ${length} caratteri`;
+            speechText = `La soluzione è una parola singola composta da ${length} caratteri.`;
             break;
         case 1:
-            attributes.database.hintsCounter += 1;
-            handlerInput.attributesManager.setSessionAttributes(attributes);
-            speechText = `La soluzione è una parola singola composta da ${length} caratteri. La prima lettere è la ${firstCar}`;
+            speechText = `La soluzione è una parola singola composta da ${length} caratteri. La prima lettere è la ${firstCar}.`;
             break;
         case 2:
-            attributes.database.hintsCounter += 1;
-            handlerInput.attributesManager.setSessionAttributes(attributes);
-            speechText = `La soluzione è una parola singola composta da ${length} caratteri. La prima lettere è la ${firstCar}. La seconda lettera è la ${secCar}`;
+            speechText = `La soluzione è una parola singola composta da ${length} caratteri. La prima lettere è la ${firstCar}. La seconda lettera è la ${secCar}.`;
     }
+
+    //UPDATE SESSION ATTRIBUTES
+    attributes.database.hintsCounter += 1;
+    attributes.database.currentHint = speechText;
+    attributes.database.lastStartedAt = d;
+
+    //SAVE SESSION ATTRIBUTES
+    handlerInput.attributesManager.setSessionAttributes(attributes);
+
     return speechText
 }
 
