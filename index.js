@@ -20,7 +20,7 @@ const HINT_REJECT = "Non puoi avere un indizio perchè devono passare almeno 24 
 const HINT_OLD = "Per il prossimo indizio, devi aspettare almeno 24 ore."
 const HELP_MESSAGE = 'Puoi chiedere un indovinello, se non riesci a risolverlo puoi chiedere un indizio al giorno. Che posso fare per te?';
 const HELP_REPROMPT = 'Che posso fare per te?';
-const STOP_MESSAGE = 'Torna ad allenarti quando vuoi.Se questa skill ti piace, lascia una recensione positiva.Grazie!;
+const STOP_MESSAGE = 'Torna ad allenarti quando vuoi.Se questa skill ti piace, lascia una recensione positiva.Grazie!';
 const FALLBACK_MESSAGE = 'Questa skill non può soddisfare la tua richiesta. Può ispirarti grazie a delle citazioni quando la apri. Cosa posso fare per te?';
 const FALLBACK_REPROMPT = 'Che cosa posso fare per te?';
 
