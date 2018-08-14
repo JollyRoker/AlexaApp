@@ -15,7 +15,7 @@ const INFO_ANSWER = "Puoi rispondere direttamente ora all'indovinello, o chieder
 const ANSWER_REQUEST1 = "L'indovinello a che stai cercando di risolvere è:<break time='0.9s'/> ";
 const ANSWER_REQUEST2 = "<break time='0.9s'/>Qual'è la tua risposta?";
 const RIGHT_ANSWER = "La risposta è corretta. Complimenti! Ma la sfida non è finita. Chiedi un nuovo indovinello per continuare a ragionare.";
-const WRONG_ANSWER = "Mi dispiace. La risposta è sbagliata";
+const WRONG_ANSWER = "Mi dispiace. La risposta è sbagliata. Ricorda che puoi chiedere fino a 3 indizi.";
 const HINT_REJECT = "Non puoi avere un indizio perchè devono passare almeno 24 ore da quando hai cominciato l'indovinello o da quando hai sentito l'ultimo indizio."
 const HINT_OLD = "Per il prossimo indizio, devi aspettare almeno 24 ore."
 const GET_ANSWER = "La soluzione all'indovinello corrente è: "
@@ -300,6 +300,7 @@ const ErrorHandler = {
 const PersistenceGettingRequestInterceptor = {
     process(handlerInput) {
         return new Promise((resolve, reject) => {
+            console.log("Inside PersistenceGettingRequestInterceptor");
             handlerInput.attributesManager.getPersistentAttributes()
                 .then((attributes) => {
                     if (Object.keys(attributes).length === 0) {
@@ -328,6 +329,7 @@ const PersistenceGettingRequestInterceptor = {
 const PersistenceSavingResponseInterceptor = {
     process(handlerInput) {
         return new Promise((resolve, reject) => {
+            console.log("Inside PersistenceSavingResponseInterceptor");
             handlerInput.attributesManager.savePersistentAttributes()
                 .then(() => {
                     resolve();
@@ -431,5 +433,5 @@ exports.handler = skillBuilder
     .addResponseInterceptors(PersistenceSavingResponseInterceptor)
     .addErrorHandlers(ErrorHandler)
     .withAutoCreateTable(true)
-    .withTableName('Database3Enigmi')
+    .withTableName('Database4Enigmi')
     .lambda();
