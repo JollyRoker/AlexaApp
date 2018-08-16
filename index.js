@@ -29,20 +29,7 @@ const FALLBACK_REPROMPT = 'Che cosa posso fare per te?';
 //TODO: Replace this data with your own.  You can find translations of this data at http://github.com/alexa/skill-sample-node-js-fact/lambda/data
 //=========================================================================================================================================
 
-const data = [
-    {
-        riddle: "La mia vita può durare qualche ora, quello che produco mi divora. Sottile sono veloce, grossa sono lenta, e il vento molto mi spaventa. Chi sono?",
-        answer: "candela"
-    },
-    {
-        riddle: "Questo è un indovinello di prova",
-        answer: "indovinello"
-    },
-    {
-        riddle: "Questo è un rompicapo di prova",
-        answer: "rompicapo"
-    }
-]
+const data = require('./data');
 
 const LaunchRequestHandler = {
     canHandle(handlerInput) {
