@@ -21,7 +21,7 @@ const HINT_OLD = "Per il prossimo indizio, devi aspettare almeno 24 ore."
 const GET_ANSWER = "La soluzione all'indovinello corrente è: "
 const HELP_MESSAGE = 'Puoi chiedere un indovinello, se non riesci a risolverlo puoi chiedere un indizio al giorno. Che posso fare per te?';
 const HELP_REPROMPT = 'Che posso fare per te?';
-const STOP_MESSAGE = 'Torna ad allenarti quando vuoi. Se questa skill ti piace, lascia una recensione positiva.Grazie!';
+const STOP_MESSAGE = 'Torna ad allenarti quando vuoi. Se questa skill ti piace, lascia una recensione positiva. Grazie!';
 const FALLBACK_MESSAGE = 'Questa skill non può soddisfare la tua richiesta. Può ispirarti grazie a delle citazioni quando la apri. Cosa posso fare per te?';
 const FALLBACK_REPROMPT = 'Che cosa posso fare per te?';
 
@@ -88,10 +88,8 @@ const NewRiddleIntentHandler = {
 const HintRequestHandler = {
     canHandle(handlerInput) {
         console.log("Inside HintRequestHandler");
-        const attributes = handlerInput.attributesManager.getSessionAttributes();
 
-        return attributes.database.currentRiddle
-            && handlerInput.requestEnvelope.request.type === 'IntentRequest'
+        return handlerInput.requestEnvelope.request.type === 'IntentRequest'
             && handlerInput.requestEnvelope.request.intent.name === 'HintRequest';
     },
     handle(handlerInput) {
@@ -136,10 +134,8 @@ const HintRequestHandler = {
 const AnswerRiddleRequestHandler = {
     canHandle(handlerInput) {
         console.log("Inside AnswerRiddleRequestHandler");
-        const attributes = handlerInput.attributesManager.getSessionAttributes();
 
-        return attributes.database.currentRiddle
-            && handlerInput.requestEnvelope.request.type === 'IntentRequest'
+        return handlerInput.requestEnvelope.request.type === 'IntentRequest'
             && handlerInput.requestEnvelope.request.intent.name === 'AnswerRiddleRequest';
     },
     handle(handlerInput) {
@@ -159,10 +155,8 @@ const AnswerRiddleRequestHandler = {
 const AnswerRiddleIntentHandler = {
     canHandle(handlerInput) {
         console.log("Inside AnswerRiddleIntentHandler");
-        const attributes = handlerInput.attributesManager.getSessionAttributes();
 
-        return attributes.database.currentRiddle
-            && handlerInput.requestEnvelope.request.type === 'IntentRequest'
+        return handlerInput.requestEnvelope.request.type === 'IntentRequest'
             && handlerInput.requestEnvelope.request.intent.name === 'AnswerRiddleIntent';
     },
     handle(handlerInput) {
@@ -199,10 +193,8 @@ const AnswerRiddleIntentHandler = {
 const GetAnswerIntentHandler = {
     canHandle(handlerInput) {
         console.log("Inside GetAnswerIntentHandler");
-        const attributes = handlerInput.attributesManager.getSessionAttributes();
 
-        return attributes.database.currentRiddle
-            && handlerInput.requestEnvelope.request.type === 'IntentRequest'
+        return handlerInput.requestEnvelope.request.type === 'IntentRequest'
             && handlerInput.requestEnvelope.request.intent.name === 'GetAnswerIntent';
     },
     handle(handlerInput) {
@@ -229,6 +221,7 @@ const GetAnswerIntentHandler = {
 
 const HelpIntentHandler = {
     canHandle(handlerInput) {
+        console.log("Inside HelpIntentHandler");
         return handlerInput.requestEnvelope.request.type === 'IntentRequest'
             && handlerInput.requestEnvelope.request.intent.name === 'AMAZON.HelpIntent';
     },
@@ -245,6 +238,7 @@ const HelpIntentHandler = {
 
 const CancelAndStopIntentHandler = {
     canHandle(handlerInput) {
+        console.log("Inside CancelAndStopIntentHandler");
         return handlerInput.requestEnvelope.request.type === 'IntentRequest'
             && (handlerInput.requestEnvelope.request.intent.name === 'AMAZON.CancelIntent'
                 || handlerInput.requestEnvelope.request.intent.name === 'AMAZON.StopIntent');
@@ -261,6 +255,7 @@ const CancelAndStopIntentHandler = {
 
 const SessionEndedRequestHandler = {
     canHandle(handlerInput) {
+        console.log("Inside SessionEndedRequestHandler");
         return handlerInput.requestEnvelope.request.type === 'SessionEndedRequest';
     },
     handle(handlerInput) {
@@ -272,6 +267,7 @@ const SessionEndedRequestHandler = {
 
 const ErrorHandler = {
     canHandle() {
+        console.log("Inside ErrorHandler");
         return true;
     },
     handle(handlerInput, error) {
